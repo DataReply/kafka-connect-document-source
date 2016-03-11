@@ -53,16 +53,16 @@ public class DocumentSourceConnector extends SourceConnector {
         filename_path = props.get(FILE_PATH);
         content_extractor = props.get(CONTENT_EXTRACTOR);
 
-        if(schema_name == null || schema_name.isEmpty())
+        if (schema_name == null || schema_name.isEmpty())
             throw new ConnectException("missing schema.name");
 
-        if(topic == null || topic.isEmpty())
+        if (topic == null || topic.isEmpty())
             throw new ConnectException("missing topic");
 
-        if(filename_path == null || filename_path.isEmpty())
+        if (filename_path == null || filename_path.isEmpty())
             throw new ConnectException("missing filename.path");
 
-        if(content_extractor == null || content_extractor.isEmpty())
+        if (content_extractor == null || content_extractor.isEmpty())
             content_extractor = "tika";
     }
 
@@ -88,7 +88,7 @@ public class DocumentSourceConnector extends SourceConnector {
     @Override
     public List<Map<String, String>> taskConfigs(int maxTasks) {
         ArrayList<Map<String, String>> configs = new ArrayList<>();
-        for(int i = 0; i < maxTasks; i++) {
+        for (int i = 0; i < maxTasks; i++) {
             Map<String, String> config = new HashMap<>();
             config.put(FILE_PATH, filename_path);
             config.put(SCHEMA_NAME, schema_name);

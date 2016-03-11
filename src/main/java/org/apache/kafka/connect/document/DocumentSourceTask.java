@@ -4,6 +4,9 @@ import org.apache.kafka.common.errors.InterruptException;
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.SchemaBuilder;
 import org.apache.kafka.connect.data.Struct;
+import org.apache.kafka.connect.document.extraction.ContentExtractor;
+import org.apache.kafka.connect.document.extraction.OracleContentExtractor;
+import org.apache.kafka.connect.document.extraction.TikaContentExtractor;
 import org.apache.kafka.connect.errors.ConnectException;
 import org.apache.kafka.connect.source.SourceRecord;
 import org.apache.kafka.connect.source.SourceTask;
@@ -34,8 +37,9 @@ public class DocumentSourceTask extends SourceTask {
     private String schemaName;
     private String topic;
     private String filename_path;
-    private String content_extractor;
+    private String extractor_cfg;
     private boolean done;
+    private ContentExtractor extractor;
 
     @Override
     public String version() {
@@ -61,7 +65,16 @@ public class DocumentSourceTask extends SourceTask {
         if(filename_path == null || filename_path.isEmpty())
             throw new ConnectException("missing filename.path");
 
-        content_extractor = props.get(DocumentSourceConnector.CONTENT_EXTRACTOR);
+        extractor_cfg = props.get(DocumentSourceConnector.CONTENT_EXTRACTOR);
+        if (extractor_cfg == ContentExtractor.TIKA)
+            extractor = new TikaContentExtractor(filename_path);
+        else if (extractor_cfg == ContentExtractor.ORACLE) {
+            try {
+                extractor = new OracleContentExtractor(filename_path);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
 
         log.trace("Creating schema");
         schema = SchemaBuilder
