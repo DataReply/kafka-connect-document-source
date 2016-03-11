@@ -21,10 +21,12 @@ public class DocumentSourceConnector extends SourceConnector {
     public static final String SCHEMA_NAME = "schema.name";
     public static final String TOPIC = "topic";
     public static final String FILE_PATH = "filename.path";
+    public static final String CONTENT_EXTRACTOR = "content.extractor";
 
     private String schema_name;
     private String topic;
     private String filename_path;
+    private String content_extractor;
 
 
     /**
@@ -46,14 +48,22 @@ public class DocumentSourceConnector extends SourceConnector {
      */
     @Override
     public void start(Map<String, String> props) {
+        schema_name = props.get(SCHEMA_NAME);
+        topic = props.get(TOPIC);
+        filename_path = props.get(FILE_PATH);
+        content_extractor = props.get(CONTENT_EXTRACTOR);
+
         if(schema_name == null || schema_name.isEmpty())
             throw new ConnectException("missing schema.name");
+
         if(topic == null || topic.isEmpty())
             throw new ConnectException("missing topic");
 
         if(filename_path == null || filename_path.isEmpty())
             throw new ConnectException("missing filename.path");
 
+        if(content_extractor == null || content_extractor.isEmpty())
+            content_extractor = "tika";
     }
 
 
@@ -83,6 +93,7 @@ public class DocumentSourceConnector extends SourceConnector {
             config.put(FILE_PATH, filename_path);
             config.put(SCHEMA_NAME, schema_name);
             config.put(TOPIC, topic);
+            config.put(CONTENT_EXTRACTOR, content_extractor);
             configs.add(config);
         }
         return configs;

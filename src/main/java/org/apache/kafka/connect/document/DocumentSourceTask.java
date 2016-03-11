@@ -7,14 +7,16 @@ import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.errors.ConnectException;
 import org.apache.kafka.connect.source.SourceRecord;
 import org.apache.kafka.connect.source.SourceTask;
+import org.apache.tika.metadata.Metadata;
+import org.apache.tika.metadata.serialization.JsonMetadata;
+import org.apache.tika.parser.AutoDetectParser;
+import org.apache.tika.sax.BodyContentHandler;
+import org.apache.tika.sax.ToXMLContentHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.xml.sax.ContentHandler;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.io.*;
 import java.util.*;
 
 
@@ -23,16 +25,17 @@ import java.util.*;
  *
  * @author Sergio Spinatelli
  */
+// TODO: comment code properly
 public class DocumentSourceTask extends SourceTask {
     private final static Logger log = LoggerFactory.getLogger(DocumentSourceTask.class);
 
 
-    private TimerTask task;
     private static Schema schema = null;
     private String schemaName;
     private String topic;
     private String filename_path;
-
+    private String content_extractor;
+    private boolean done;
 
     @Override
     public String version() {
@@ -58,13 +61,18 @@ public class DocumentSourceTask extends SourceTask {
         if(filename_path == null || filename_path.isEmpty())
             throw new ConnectException("missing filename.path");
 
+        content_extractor = props.get(DocumentSourceConnector.CONTENT_EXTRACTOR);
+
         log.trace("Creating schema");
         schema = SchemaBuilder
                 .struct()
                 .name(schemaName)
                 .field("name", Schema.OPTIONAL_STRING_SCHEMA)
-                .field("content", Schema.OPTIONAL_BYTES_SCHEMA)
+                .field("raw_content", Schema.OPTIONAL_STRING_SCHEMA)
+                .field("content", Schema.OPTIONAL_STRING_SCHEMA)
+                .field("metadata", Schema.OPTIONAL_STRING_SCHEMA)
                 .build();
+        done = false;
     }
 
 
@@ -79,13 +87,14 @@ public class DocumentSourceTask extends SourceTask {
 
         List<SourceRecord> records = new ArrayList<>();
 
-        File file = new File(filename_path);
-        // creates the record
-        // no need to save offsets
-        SourceRecord record = extractContent(file);
-        records.add(record);
-        this.stop();
-
+        if (!done) {
+            File file = new File(filename_path);
+            // creates the record
+            // no need to save offsets
+            SourceRecord record = tikaExtractContent(file);
+            records.add(record);
+            stop();
+        }
         return records;
     }
 
@@ -95,25 +104,38 @@ public class DocumentSourceTask extends SourceTask {
      *
      * @return a source records
      */
-    private SourceRecord extractContent(File file) {
-
-        byte[] data = null;
+    private SourceRecord tikaExtractContent(File file) {
+        AutoDetectParser parser = new AutoDetectParser();
+        Metadata metadata = new Metadata();
         try {
-            //transform file to byte[]
-            Path path = Paths.get(file.getPath());
-            data = Files.readAllBytes(path);
-            log.error(String.valueOf(data.length));
-        } catch (IOException e) {
+            InputStream stream = new FileInputStream(file);
+            InputStream raw_stream = new FileInputStream(file);
+
+            ContentHandler handler = new ToXMLContentHandler();
+            parser.parse(stream, handler, metadata);
+
+            StringWriter writer = new StringWriter();
+            JsonMetadata.toJson(metadata, writer);
+
+            ContentHandler raw_handler = new BodyContentHandler();
+            parser.parse(raw_stream, raw_handler, metadata);
+
+            // creates the structured message
+            Struct messageStruct = new Struct(schema);
+            messageStruct.put("name", file.getName());
+            messageStruct.put("content", handler.toString().trim());
+            messageStruct.put("raw_content", raw_handler.toString().trim());
+            messageStruct.put("metadata", writer.toString().trim());
+
+            stream.close();
+            raw_stream.close();
+
+            return new SourceRecord(Collections.singletonMap("document_content", file.getName()), Collections.singletonMap(file.getName(), 0), topic, messageStruct.schema(), messageStruct);
+        } catch (Exception e) {
             e.printStackTrace();
         }
-
-        // creates the structured message
-        Struct messageStruct = new Struct(schema);
-        messageStruct.put("name", file.getName());
-        messageStruct.put("binary", data);
-        // creates the record
-        // no need to save offsets
-        return new SourceRecord(Collections.singletonMap("file_binary", 0), Collections.singletonMap("0", 0), topic, messageStruct.schema(), messageStruct);
+        // TODO: am in meeting, not sure about this, will think about it later
+        return null;
     }
 
 
@@ -122,6 +144,7 @@ public class DocumentSourceTask extends SourceTask {
      */
     @Override
     public void stop() {
+        done = true;
     }
 
 }
