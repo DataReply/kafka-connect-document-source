@@ -9,7 +9,7 @@ mvn package
 ```
 
 # Sample Configuration
-```
+```ini
 name=document-source
 connector.class=org.apache.kafka.connect.document.DocumentSourceConnector
 tasks.max=1
@@ -31,7 +31,7 @@ content.extractor=tika
 # Records
 
 The records added to Kafka have following fields:
-- 'name': the name of the file the content has been extracted from
-- 'metadata': JSON string containing all metadata fields extracted from the file
-- 'raw_content': string containing the raw contents of the file (text only)
-- 'content': string containing the structured content of the file (XHTML)
+- '**name**': the name of the file the content has been extracted from
+- '**metadata**': JSON string containing all metadata fields extracted from the file
+- '**raw_content**': string containing the raw contents of the file (text only)
+- '**content**': string containing the structured content of the file (XHTML)
