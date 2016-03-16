@@ -1,5 +1,5 @@
 package org.apache.kafka.connect.document;
-import org.apache.commons.io.FileDeleteStrategy;
+
 import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.source.SourceRecord;
 import org.apache.kafka.connect.source.SourceTaskContext;
@@ -12,12 +12,10 @@ import org.powermock.api.easymock.PowerMock;
 
 import java.io.File;
 import java.io.FileWriter;
-import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-
 
 
 /**
@@ -51,8 +49,8 @@ public class DocumentSourceTaskTest {
             replay();
             List<SourceRecord> records;
 
-            Integer numberOfFiles = new Random().nextInt(new Random().nextInt(MAX_FILE_TESTS - MIN_FILE_TESTS-1)+1)+MIN_FILE_TESTS;
-            System.out.println("CREATING "+numberOfFiles.toString()+" FILES");
+            Integer numberOfFiles = new Random().nextInt(new Random().nextInt(MAX_FILE_TESTS - MIN_FILE_TESTS - 1) + 1) + MIN_FILE_TESTS;
+            System.out.println("CREATING " + numberOfFiles.toString() + " FILES");
 
             for (int i = 0; i < numberOfFiles; i++) {
                 File f = File.createTempFile("document-source-test", null);
@@ -61,10 +59,12 @@ public class DocumentSourceTaskTest {
                 fw.close();
 
                 sourceProperties.put("filename.path", f.getAbsolutePath());
+                sourceProperties.put("content.extractor", "tika");
+                sourceProperties.put("output.type", "text");
                 task.start(sourceProperties);
                 records = task.poll();
                 Struct val = (Struct) records.get(0).value();
-
+                System.out.println(val.getString("raw_content"));
                 Assert.assertEquals(1, records.size());
                 Assert.assertEquals((numberOfFiles - i), Integer.parseInt(val.getString("raw_content")));
                 Assert.assertEquals(f.getName(), val.getString("name"));

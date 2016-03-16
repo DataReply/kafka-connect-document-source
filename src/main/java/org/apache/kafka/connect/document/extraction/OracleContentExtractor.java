@@ -14,40 +14,36 @@ import java.util.Map;
  * Created by Sergio Spinatelli on 11.03.2016.
  */
 public class OracleContentExtractor implements ContentExtractor {
-    public final static int OUTPUT_XML = 0;
-    public final static int OUTPUT_TEXT = 1;
-    public final static int OUTPUT_XML_TEXT = 2;
-
-
-    private Map<Integer, Class<?>> handlers = new HashMap<>(3);
+    private final File file;
+    private Map<String, Class<?>> handlers = new HashMap<>(4);
 
     private SecureRequest request;
     private Handler handler;
-    private int output;
     private String xml = "";
     private String text = "";
     private boolean extracted;
 
-    public OracleContentExtractor(String file) throws Exception {
-        this(file, 2);
+    public OracleContentExtractor(String filename) throws Exception {
+        this(filename, OUTPUT_XML_TEXT);
     }
 
-    public OracleContentExtractor(String file, int output) throws Exception {
-        if (output > OUTPUT_XML_TEXT || output < OUTPUT_XML)
-            throw new Exception("Invalid output type for OracleContentExtractor. Has to be one of [OUTPUT_XML, OUTPUT_TEXT, OUTPUT_XML_TEXT]");
-
+    public OracleContentExtractor(String filename, String output) throws Exception {
+        file = new File(filename);
         handlers.put(OUTPUT_XML_TEXT, SimultaneousHandler.class);
-        handlers.put(OUTPUT_TEXT, XMLHandler.class);
-        handlers.put(OUTPUT_XML, PlainTextHandler.class);
+        handlers.put(OUTPUT_TEXT_XML, SimultaneousHandler.class);
+        handlers.put(OUTPUT_TEXT, PlainTextHandler.class);
+        handlers.put(OUTPUT_XML, XMLHandler.class);
 
-        this.output = output;
+        if (!handlers.containsKey(output))
+            throw new Exception("Invalid output type for OracleContentExtractor. Has to be one of [OUTPUT_XML, OUTPUT_TEXT, OUTPUT_XML_TEXT, OUTPUT_TEXT_XML]");
+
         extracted = false;
         handler = (Handler) handlers.get(output).newInstance();
 
         request = new SecureRequest();
         request.setOption(SecureOptions.JustAnalyze, true);
         request.setOption(SecureOptions.OutputType, SecureOptions.OutputTypeOption.ToHandler);
-        request.setOption(SecureOptions.SourceDocument, new File(file));
+        request.setOption(SecureOptions.SourceDocument, file);
         request.setOption(SecureOptions.ElementHandler, handler);
     }
 
@@ -65,11 +61,22 @@ public class OracleContentExtractor implements ContentExtractor {
         return xml;
     }
 
+    @Override
+    public String fileName() {
+        return file.getName();
+    }
+
+    @Override
+    public String metadata() {
+        return "";
+    }
+
     public void extract() throws IOException {
         request.execute();
         String t = handler.getText();
         if (t != null) text = t;
         String x = handler.getXML();
-        if (x != null) xml = t;
+        if (x != null) xml = x;
+        extracted = true;
     }
 }

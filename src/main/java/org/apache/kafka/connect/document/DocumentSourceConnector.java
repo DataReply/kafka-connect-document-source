@@ -22,11 +22,13 @@ public class DocumentSourceConnector extends SourceConnector {
     public static final String TOPIC = "topic";
     public static final String FILE_PATH = "filename.path";
     public static final String CONTENT_EXTRACTOR = "content.extractor";
+    public static final String OUTPUT_TYPE = "output.type";
 
     private String schema_name;
     private String topic;
     private String filename_path;
     private String content_extractor;
+    private String output_type;
 
 
     /**
@@ -52,6 +54,7 @@ public class DocumentSourceConnector extends SourceConnector {
         topic = props.get(TOPIC);
         filename_path = props.get(FILE_PATH);
         content_extractor = props.get(CONTENT_EXTRACTOR);
+        output_type = props.get(OUTPUT_TYPE);
 
         if (schema_name == null || schema_name.isEmpty())
             throw new ConnectException("missing schema.name");
@@ -64,6 +67,9 @@ public class DocumentSourceConnector extends SourceConnector {
 
         if (content_extractor == null || content_extractor.isEmpty())
             content_extractor = "tika";
+
+        if (output_type == null || output_type.isEmpty())
+            output_type = "text_xml";
     }
 
 

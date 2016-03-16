@@ -21,7 +21,6 @@ public class PlainTextHandler extends GenericElementHandler implements Handler {
     }
 
     public void startRoot(RootElement root) throws IOException {
-        builder.append("\n");
     }
 
     public void endRoot(Element element) throws IOException {

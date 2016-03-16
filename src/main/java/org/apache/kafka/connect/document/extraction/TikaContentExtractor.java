@@ -17,10 +17,10 @@ import java.io.*;
 public class TikaContentExtractor implements ContentExtractor {
     private AutoDetectParser parser = new AutoDetectParser();
     private String metadata = "";
-    private String file;
+    private File file;
 
-    public TikaContentExtractor(String file) {
-        this.file = file;
+    public TikaContentExtractor(String filename) {
+        file = new File(filename);
     }
 
     @Override
@@ -33,8 +33,18 @@ public class TikaContentExtractor implements ContentExtractor {
         return extract(new ToXMLContentHandler(), true);
     }
 
+    @Override
+    public String metadata() {
+        return metadata;
+    }
+
+    @Override
+    public String fileName() {
+        return file.getName();
+    }
+
     private String extract(ContentHandler handler, boolean updateMetadata) throws TikaException, SAXException, IOException {
-        InputStream stream = new FileInputStream(new File(file));
+        InputStream stream = new FileInputStream(file);
         Metadata md = new Metadata();
         parser.parse(stream, handler, md);
         if (updateMetadata) {

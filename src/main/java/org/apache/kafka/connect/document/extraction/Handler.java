@@ -7,5 +7,6 @@ import net.bitform.api.elements.ElementHandler;
  */
 public interface Handler extends ElementHandler {
     String getText();
+
     String getXML();
 }
