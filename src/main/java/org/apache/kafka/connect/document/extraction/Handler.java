@@ -9,4 +9,6 @@ public interface Handler extends ElementHandler {
     String getText();
 
     String getXML();
+
+    String getMetadata();
 }

@@ -25,7 +25,7 @@ public class TikaContentExtractor implements ContentExtractor {
 
     @Override
     public String plainText() throws IOException, TikaException, SAXException {
-        return extract(new BodyContentHandler(-1), false);
+        return extract(new BodyContentHandler(-1), metadata == "");
     }
 
     @Override

@@ -3,10 +3,12 @@ package org.apache.kafka.connect.document.extraction;
 import net.bitform.api.secure.SecureOptions;
 import net.bitform.api.secure.SecureRequest;
 import org.apache.tika.exception.TikaException;
+import org.apache.tika.metadata.serialization.JsonMetadata;
 import org.xml.sax.SAXException;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.StringWriter;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -22,6 +24,7 @@ public class OracleContentExtractor implements ContentExtractor {
     private String xml = "";
     private String text = "";
     private boolean extracted;
+    private String metadata = "";
 
     public OracleContentExtractor(String filename) throws Exception {
         this(filename, OUTPUT_XML_TEXT);
@@ -68,7 +71,7 @@ public class OracleContentExtractor implements ContentExtractor {
 
     @Override
     public String metadata() {
-        return "";
+        return handler.getMetadata();
     }
 
     public void extract() throws IOException {
@@ -77,6 +80,7 @@ public class OracleContentExtractor implements ContentExtractor {
         if (t != null) text = t;
         String x = handler.getXML();
         if (x != null) xml = x;
+
         extracted = true;
     }
 }

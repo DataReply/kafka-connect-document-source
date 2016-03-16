@@ -7,6 +7,7 @@
     <groupId>org.apache.kafka</groupId>
     <artifactId>connect-document-source</artifactId>
     <version>1.0</version>
+
     <build>
         <plugins>
             <plugin>
@@ -41,6 +42,13 @@
         </plugins>
     </build>
     <dependencies>
+        <dependency>
+            <groupId>net.bitform</groupId>
+            <artifactId>oracle-clean-content</artifactId>
+            <version>1.0</version>
+            <scope>system</scope>
+            <systemPath>${basedir}/libs/CleanContent.jar</systemPath>
+        </dependency>
         <dependency>
             <groupId>org.apache.kafka</groupId>
             <artifactId>connect-api</artifactId>

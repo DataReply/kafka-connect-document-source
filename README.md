@@ -26,12 +26,17 @@ content.extractor=tika
 - **topic**: name of the topic to append to
 - **filename.path**: path to the file to extract content from
 - **content.extractor**: type of content extractor to use; possible values are:
-	- 'tika': use the Apache Tika content extractor
+	- 'tika': use the Apache Tika content extractor (default)
+	- 'oracle': use the Oracle Clean Content content extractor (faster but not recommended as it's less tested and testable)
+- **output.type**: output type of extracted content, i.e. in what format the content should be sent to Kafka, can be one of:
+	- 'text', to extract only the plain text
+	- 'xml', to extract the content in a more structured format (XHTML) as well as the file's metadata
+	- 'text_xml' or 'xml_text', to extract both (default)
 
 # Records
 
 The records added to Kafka have following fields:
 - '**name**': the name of the file the content has been extracted from
-- '**metadata**': JSON string containing all metadata fields extracted from the file
-- '**raw_content**': string containing the raw contents of the file (text only)
-- '**content**': string containing the structured content of the file (XHTML)
+- '**raw_content**': string containing the raw contents of the file (plain text only)
+- '**metadata**': JSON string containing all metadata fields extracted from the file (empty if plain text only is extracted)
+- '**content**': string containing the structured content of the file (XHTML) (not present if plain text only is extracted)

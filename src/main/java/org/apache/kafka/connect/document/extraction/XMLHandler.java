@@ -2,6 +2,8 @@ package org.apache.kafka.connect.document.extraction;
 
 import net.bitform.api.elements.*;
 import net.bitform.core.Helper;
+import org.apache.tika.metadata.Metadata;
+import org.apache.tika.metadata.serialization.JsonMetadata;
 import org.apache.tika.sax.ToXMLContentHandler;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.AttributesImpl;
@@ -21,12 +23,15 @@ import java.nio.CharBuffer;
  * Created by Sergio Spinatelli on 11.03.2016.
  */
 public class XMLHandler extends GenericElementHandler implements Handler {
+    public static String PREFIX = "http://www.bitform.net/xml/schema/elements.xsd";
     private ToXMLContentHandler handler = new ToXMLContentHandler();
     private boolean documentEnded = false;
     private char[] array = null;
     private AttributesImpl attributes = new AttributesImpl();
-    public static String PREFIX = "http://www.bitform.net/xml/schema/elements.xsd";
     private int head = 0;
+
+    private Metadata metadata = new Metadata();
+    private String md = "";
 
     public void startRoot(RootElement element) throws IOException {
         try {
@@ -62,16 +67,19 @@ public class XMLHandler extends GenericElementHandler implements Handler {
     }
 
     public void close() {
-        if (!documentEnded) {
-            try {
+        try {
+            if (!documentEnded) {
                 handler.endElement(PREFIX, "root", "root");
                 handler.endPrefixMapping(PREFIX);
                 handler.endDocument();
-            } catch (Exception e) {
-                e.printStackTrace();
             }
+            StringWriter writer = new StringWriter();
+            JsonMetadata.toJson(metadata, writer);
+            writer.close();
+            md = writer.toString();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-
     }
 
     public void start(Element element) throws IOException {
@@ -211,6 +219,7 @@ public class XMLHandler extends GenericElementHandler implements Handler {
             this.start(h);
             head = 1;
         }
+        metadata.add(name, value);
         GenericElement e = new GenericElement("meta", name, value, PREFIX);
         this.start(e);
     }
@@ -355,9 +364,13 @@ public class XMLHandler extends GenericElementHandler implements Handler {
 
     @Override
     public String getXML() {
+        return getXML(true);
+    }
+
+    public String getXML(boolean indent) {
         try {
             Transformer transformer = TransformerFactory.newInstance().newTransformer();
-            transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+            transformer.setOutputProperty(OutputKeys.INDENT, indent ? "yes" : "no");
             transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
             StreamResult result = new StreamResult(new StringWriter());
             Source source = new StreamSource(new StringReader(toString()));
@@ -368,5 +381,10 @@ public class XMLHandler extends GenericElementHandler implements Handler {
             e.printStackTrace();
             return "";
         }
+    }
+
+    @Override
+    public String getMetadata() {
+        return md;
     }
 }

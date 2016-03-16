@@ -27,8 +27,8 @@ public class SimultaneousHandler extends XMLHandler implements Handler {
     }
 
     public void close() {
-        plainHandler.close();
         super.close();
+        plainHandler.close();
     }
 
     public void start(Element element) throws IOException {
@@ -54,4 +54,5 @@ public class SimultaneousHandler extends XMLHandler implements Handler {
     public String getText() {
         return plainHandler.getText();
     }
+
 }
