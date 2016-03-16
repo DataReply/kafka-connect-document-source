@@ -64,15 +64,15 @@ public class DocumentSourceTask extends SourceTask {
 
         extractor_cfg = props.get(DocumentSourceConnector.CONTENT_EXTRACTOR);
         output_type = props.get(DocumentSourceConnector.OUTPUT_TYPE);
-        if (extractor_cfg == ContentExtractor.TIKA)
-            extractor = new TikaContentExtractor(filename_path);
-        else if (extractor_cfg == ContentExtractor.ORACLE) {
+
+        if (extractor_cfg == ContentExtractor.ORACLE) {
             try {
                 extractor = new OracleContentExtractor(filename_path, output_type);
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        }
+        } else
+            extractor = new TikaContentExtractor(filename_path);
 
         log.trace("Creating schema");
         schema = SchemaBuilder
@@ -102,14 +102,15 @@ public class DocumentSourceTask extends SourceTask {
             try {
                 Struct messageStruct = new Struct(schema);
                 messageStruct.put("name", extractor.fileName());
-                messageStruct.put("content", extractor.xml());
-                messageStruct.put("raw_content", extractor.plainText());
+                messageStruct.put("content", output_type.equals("text") ? "" : extractor.xml());
+                messageStruct.put("raw_content", output_type.equals("xml") ? "" : extractor.plainText());
                 messageStruct.put("metadata", extractor.metadata());
                 SourceRecord record = new SourceRecord(Collections.singletonMap("document_content", extractor.fileName()), Collections.singletonMap(extractor.fileName(), 0), topic, messageStruct.schema(), messageStruct);
                 records.add(record);
                 stop();
             } catch (Exception e) {
                 e.printStackTrace();
+                stop();
             }
         }
         return records;

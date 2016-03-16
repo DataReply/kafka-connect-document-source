@@ -5,10 +5,7 @@ import org.apache.kafka.connect.connector.Task;
 import org.apache.kafka.connect.errors.ConnectException;
 import org.apache.kafka.connect.source.SourceConnector;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 
 /**
@@ -23,6 +20,7 @@ public class DocumentSourceConnector extends SourceConnector {
     public static final String FILE_PATH = "filename.path";
     public static final String CONTENT_EXTRACTOR = "content.extractor";
     public static final String OUTPUT_TYPE = "output.type";
+    private static final List<String> ALLOWED_OUTPUTS = Arrays.asList("text", "text_xml", "xml_text", "xml");
 
     private String schema_name;
     private String topic;
@@ -70,6 +68,9 @@ public class DocumentSourceConnector extends SourceConnector {
 
         if (output_type == null || output_type.isEmpty())
             output_type = "text_xml";
+
+        if (!ALLOWED_OUTPUTS.contains(output_type))
+            throw new ConnectException("output.type has to be one of [text, text_xml, xml_text, xml]");
     }
 
 
@@ -100,6 +101,7 @@ public class DocumentSourceConnector extends SourceConnector {
             config.put(SCHEMA_NAME, schema_name);
             config.put(TOPIC, topic);
             config.put(CONTENT_EXTRACTOR, content_extractor);
+            config.put(OUTPUT_TYPE, output_type);
             configs.add(config);
         }
         return configs;
