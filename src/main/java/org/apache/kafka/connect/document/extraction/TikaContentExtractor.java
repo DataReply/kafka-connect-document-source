@@ -17,6 +17,7 @@ import java.io.*;
 public class TikaContentExtractor implements ContentExtractor {
     private AutoDetectParser parser = new AutoDetectParser();
     private String metadata = "";
+    private Metadata md = new Metadata();
     private File file;
 
     public TikaContentExtractor(String filename) {
@@ -34,8 +35,13 @@ public class TikaContentExtractor implements ContentExtractor {
     }
 
     @Override
-    public String metadata() {
+    public String metadataString() {
         return metadata;
+    }
+
+    @Override
+    public Metadata metadata() {
+        return md;
     }
 
     @Override
@@ -45,13 +51,16 @@ public class TikaContentExtractor implements ContentExtractor {
 
     private String extract(ContentHandler handler, boolean updateMetadata) throws TikaException, SAXException, IOException {
         InputStream stream = new FileInputStream(file);
-        Metadata md = new Metadata();
-        parser.parse(stream, handler, md);
+
         if (updateMetadata) {
+            parser.parse(stream, handler, md);
             StringWriter writer = new StringWriter();
             JsonMetadata.toJson(md, writer);
             writer.close();
             metadata = writer.toString();
+        } else {
+            Metadata m = new Metadata();
+            parser.parse(stream, handler, m);
         }
         stream.close();
         return handler.toString().trim();

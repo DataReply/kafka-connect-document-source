@@ -32,6 +32,9 @@ public class XMLHandler extends GenericElementHandler implements Handler {
 
     private Metadata metadata = new Metadata();
     private String md = "";
+    private boolean inMetadata = false;
+    private String mdValue;
+    private String mdName;
 
     public void startRoot(RootElement element) throws IOException {
         try {
@@ -46,13 +49,15 @@ public class XMLHandler extends GenericElementHandler implements Handler {
     public void endRoot(Element element) throws IOException {
         try {
             if (!documentEnded) {
+                GenericElement e = new GenericElement("body", PREFIX);
+                this.end(e);
                 handler.endElement(PREFIX, "html", "html");
                 handler.endPrefixMapping("");
                 handler.endDocument();
                 documentEnded = true;
             }
-        } catch (SAXException e) {
-            e.printStackTrace();
+        } catch (SAXException ex) {
+            ex.printStackTrace();
         }
     }
 
@@ -69,9 +74,7 @@ public class XMLHandler extends GenericElementHandler implements Handler {
     public void close() {
         try {
             if (!documentEnded) {
-                handler.endElement(PREFIX, "root", "root");
-                handler.endPrefixMapping(PREFIX);
-                handler.endDocument();
+                endRoot(null);
             }
             StringWriter writer = new StringWriter();
             JsonMetadata.toJson(metadata, writer);
@@ -99,6 +102,7 @@ public class XMLHandler extends GenericElementHandler implements Handler {
     }
 
     public void locator(long loc) throws IOException {
+        checkHeadEnded();
         attributes.clear();
         attributes.addAttribute(null, "p", "p", "CDATA", "0x" + Long.toHexString(loc));
 
@@ -129,28 +133,55 @@ public class XMLHandler extends GenericElementHandler implements Handler {
             }
 
             if (buffer.hasArray()) {
-                handler.characters(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
-                buffer.position(buffer.arrayOffset() + buffer.position() + buffer.remaining());
+                if (!inMetadata) {
+                    handler.characters(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
+                    buffer.position(buffer.arrayOffset() + buffer.position() + buffer.remaining());
+                } else {
+                    mdValue = String.valueOf(buffer.array(),buffer.arrayOffset() + buffer.position(), buffer.remaining());
+                }
             } else {
                 if (array == null) {
                     array = new char[1024];
                 }
 
-                while (buffer.remaining() > array.length) {
-                    buffer.get(array);
-                    handler.characters(array, 0, array.length);
-                }
+                if (!inMetadata) {
+                    while (buffer.remaining() > array.length) {
+                        buffer.get(array);
+                        handler.characters(array, 0, array.length);
+                    }
 
-                if (buffer.remaining() > 0) {
-                    i = buffer.remaining();
-                    buffer.get(array, 0, i);
-                    handler.characters(array, 0, i);
+                    if (buffer.remaining() > 0) {
+                        i = buffer.remaining();
+                        buffer.get(array, 0, i);
+                        handler.characters(array, 0, i);
+                    }
+                } else {
+                    mdValue = "";
+                    while (buffer.remaining() > array.length) {
+                        buffer.get(array);
+                        mdValue = mdValue + String.valueOf(array);
+                    }
+
+                    if (buffer.remaining() > 0) {
+                        i = buffer.remaining();
+                        buffer.get(array, 0, i);
+                        mdValue = mdValue + String.valueOf(array, 0, i);
+                    }
                 }
             }
 
-
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    private void checkHeadEnded() throws IOException {
+        if (head == 1) {
+            GenericElement h = new GenericElement("head", PREFIX);
+            this.end(h);
+            head = 2;
+            h = new GenericElement("body", PREFIX);
+            this.start(h);
         }
     }
 
@@ -160,15 +191,35 @@ public class XMLHandler extends GenericElementHandler implements Handler {
     public void endCollection(Element var1) throws IOException {
     }
 
+    public void startTemplate(TemplateElement var1) throws IOException {
+    }
+
+    public void endTemplate(Element var1) throws IOException {
+    }
+
+    public void startSection(SectionElement var1) throws IOException {
+        GenericElement h = new GenericElement("div", PREFIX);
+        this.start(h);
+    }
+
+    public void endSection(Element var1) throws IOException {
+        GenericElement h = new GenericElement("div", PREFIX);
+        this.end(h);
+    }
+
     public void startContent(ContentElement var1) throws IOException {
         startMetadata("type", String.valueOf(var1.type));
         endMetadata();
         startMetadata("format", String.valueOf(var1.format));
         endMetadata();
+        checkHeadEnded();
+        GenericElement e = new GenericElement("div", PREFIX);
+        e.addAttribute("class", "content");
+        this.start(e);
     }
 
     public void endContent(Element var1) throws IOException {
-        GenericElement e = new GenericElement("body", PREFIX);
+        GenericElement e = new GenericElement("div", PREFIX);
         this.end(e);
     }
 
@@ -179,19 +230,14 @@ public class XMLHandler extends GenericElementHandler implements Handler {
     }
 
     public void startPage(PageElement var1) throws IOException {
-        if (head == 1) {
-            GenericElement h = new GenericElement("head", PREFIX);
-            this.end(h);
-            head = 2;
-            h = new GenericElement("body", PREFIX);
-            this.start(h);
-        }
+        checkHeadEnded();
         GenericElement e = new GenericElement("div", PREFIX);
         e.addAttribute("class", "page");
         this.start(e);
     }
 
     public void startL(LElement var1) throws IOException {
+        checkHeadEnded();
         GenericElement p = new GenericElement("p", PREFIX);
         this.start(p);
     }
@@ -219,17 +265,30 @@ public class XMLHandler extends GenericElementHandler implements Handler {
             this.start(h);
             head = 1;
         }
-        metadata.add(name, value);
-        GenericElement e = new GenericElement("meta", name, value, PREFIX);
-        this.start(e);
+        if (value != null && !value.isEmpty()) {
+            metadata.add(name, value);
+            GenericElement e = new GenericElement("meta", name, value, PREFIX);
+            this.start(e);
+            inMetadata = false;
+        } else {
+            mdName = name;
+            inMetadata = true;
+        }
     }
 
     public void endMetadata() throws IOException {
+        if (inMetadata) {
+            GenericElement e = new GenericElement("meta", mdName, mdValue, PREFIX);
+            this.start(e);
+            metadata.add(mdName, mdValue);
+            inMetadata = false;
+        }
         Element e = new GenericElement("meta", PREFIX);
         this.end(e);
     }
 
     public void startAnnot(AnnotElement var1) throws IOException {
+        checkHeadEnded();
         GenericElement p = new GenericElement("p", PREFIX);
         p.addAttribute("class", "annotation");
         this.start(p);
@@ -384,7 +443,12 @@ public class XMLHandler extends GenericElementHandler implements Handler {
     }
 
     @Override
-    public String getMetadata() {
+    public String getMetadataString() {
         return md;
+    }
+
+    @Override
+    public Metadata getMetadata() {
+        return metadata;
     }
 }

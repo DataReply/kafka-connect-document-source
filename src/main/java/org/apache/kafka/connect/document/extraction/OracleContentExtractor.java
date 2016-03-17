@@ -3,12 +3,11 @@ package org.apache.kafka.connect.document.extraction;
 import net.bitform.api.secure.SecureOptions;
 import net.bitform.api.secure.SecureRequest;
 import org.apache.tika.exception.TikaException;
-import org.apache.tika.metadata.serialization.JsonMetadata;
+import org.apache.tika.metadata.Metadata;
 import org.xml.sax.SAXException;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.StringWriter;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -70,7 +69,12 @@ public class OracleContentExtractor implements ContentExtractor {
     }
 
     @Override
-    public String metadata() {
+    public String metadataString() {
+        return handler.getMetadataString();
+    }
+
+    @Override
+    public Metadata metadata() {
         return handler.getMetadata();
     }
 

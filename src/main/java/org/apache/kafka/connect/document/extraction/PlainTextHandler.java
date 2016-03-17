@@ -126,8 +126,13 @@ public class PlainTextHandler extends GenericElementHandler implements Handler {
     }
 
     @Override
-    public String getMetadata() {
+    public String getMetadataString() {
         return md;
+    }
+
+    @Override
+    public Metadata getMetadata() {
+        return metadata;
     }
 
     @Override

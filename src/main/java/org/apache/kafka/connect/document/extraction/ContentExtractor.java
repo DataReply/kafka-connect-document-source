@@ -1,6 +1,7 @@
 package org.apache.kafka.connect.document.extraction;
 
 import org.apache.tika.exception.TikaException;
+import org.apache.tika.metadata.Metadata;
 import org.xml.sax.SAXException;
 
 import java.io.IOException;
@@ -23,5 +24,6 @@ public interface ContentExtractor {
 
     String fileName();
 
-    String metadata();
+    Metadata metadata();
+    String metadataString();
 }
