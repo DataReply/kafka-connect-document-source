@@ -49,12 +49,12 @@ public class XMLHandler extends GenericElementHandler implements Handler {
     public void endRoot(Element element) throws IOException {
         try {
             if (!documentEnded) {
+                documentEnded = true;
                 GenericElement e = new GenericElement("body", PREFIX);
                 this.end(e);
                 handler.endElement(PREFIX, "html", "html");
                 handler.endPrefixMapping("");
                 handler.endDocument();
-                documentEnded = true;
             }
         } catch (SAXException ex) {
             ex.printStackTrace();
@@ -137,7 +137,7 @@ public class XMLHandler extends GenericElementHandler implements Handler {
                     handler.characters(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
                     buffer.position(buffer.arrayOffset() + buffer.position() + buffer.remaining());
                 } else {
-                    mdValue = String.valueOf(buffer.array(),buffer.arrayOffset() + buffer.position(), buffer.remaining());
+                    mdValue = String.valueOf(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
                 }
             } else {
                 if (array == null) {
@@ -175,31 +175,24 @@ public class XMLHandler extends GenericElementHandler implements Handler {
         }
     }
 
-    private void checkHeadEnded() throws IOException {
+    private boolean checkHeadEnded() throws IOException {
         if (head == 1) {
             GenericElement h = new GenericElement("head", PREFIX);
             this.end(h);
             head = 2;
             h = new GenericElement("body", PREFIX);
             this.start(h);
+            return true;
         }
-    }
-
-    public void startCollection(CollectionElement var1) throws IOException {
-    }
-
-    public void endCollection(Element var1) throws IOException {
-    }
-
-    public void startTemplate(TemplateElement var1) throws IOException {
-    }
-
-    public void endTemplate(Element var1) throws IOException {
+        return false;
     }
 
     public void startSection(SectionElement var1) throws IOException {
+        checkHeadEnded();
         GenericElement h = new GenericElement("div", PREFIX);
+        h.addAttribute("class", "content");
         this.start(h);
+
     }
 
     public void endSection(Element var1) throws IOException {
@@ -212,15 +205,9 @@ public class XMLHandler extends GenericElementHandler implements Handler {
         endMetadata();
         startMetadata("format", String.valueOf(var1.format));
         endMetadata();
-        checkHeadEnded();
-        GenericElement e = new GenericElement("div", PREFIX);
-        e.addAttribute("class", "content");
-        this.start(e);
     }
 
     public void endContent(Element var1) throws IOException {
-        GenericElement e = new GenericElement("div", PREFIX);
-        this.end(e);
     }
 
     public void startEmbeddedContent(EmbeddedContentElement var1) throws IOException {
@@ -237,7 +224,11 @@ public class XMLHandler extends GenericElementHandler implements Handler {
     }
 
     public void startL(LElement var1) throws IOException {
-        checkHeadEnded();
+        if (checkHeadEnded()) {
+            GenericElement h = new GenericElement("div", PREFIX);
+            h.addAttribute("class", "content");
+            this.start(h);
+        }
         GenericElement p = new GenericElement("p", PREFIX);
         this.start(p);
     }
@@ -297,6 +288,24 @@ public class XMLHandler extends GenericElementHandler implements Handler {
     public void endAnnot(Element var1) throws IOException {
         GenericElement p = new GenericElement("p", PREFIX);
         this.end(p);
+    }
+
+    public void startBody(BodyElement var1) throws IOException {
+    }
+
+    public void endBody(Element var1) throws IOException {
+    }
+
+    public void startCollection(CollectionElement var1) throws IOException {
+    }
+
+    public void endCollection(Element var1) throws IOException {
+    }
+
+    public void startTemplate(TemplateElement var1) throws IOException {
+    }
+
+    public void endTemplate(Element var1) throws IOException {
     }
 
 

@@ -56,7 +56,7 @@ public class DocumentSourceTask extends SourceTask {
         schemaName = props.get(DocumentSourceConnector.SCHEMA_NAME);
         if (schemaName == null)
             throw new ConnectException("config schema.name null");
-        subSchemaName = "sub_"+schemaName;
+        subSchemaName = "sub_" + schemaName;
         topic = props.get(DocumentSourceConnector.TOPIC);
         if (topic == null)
             throw new ConnectException("config topic null");
@@ -79,7 +79,7 @@ public class DocumentSourceTask extends SourceTask {
             extractor = new TikaContentExtractor(filename_path);
 
         log.trace("Creating schema");
-        subschema =  SchemaBuilder
+        subschema = SchemaBuilder
                 .struct()
                 .name(subSchemaName)
                 .field("ContentType", Schema.OPTIONAL_STRING_SCHEMA)
@@ -117,7 +117,7 @@ public class DocumentSourceTask extends SourceTask {
                 messageStruct.put("name", extractor.fileName());
                 messageStruct.put("content", output_type.equals("text") ? "" : extractor.xml());
                 messageStruct.put("raw_content", output_type.equals("xml") ? "" : extractor.plainText());
-                Struct subStruct = extractor_cfg.equals( "tika") ? tikaMetadata(extractor.metadata()) : oracleMetadata(extractor.metadata());
+                Struct subStruct = extractor_cfg.equals("tika") ? tikaMetadata(extractor.metadata()) : oracleMetadata(extractor.metadata());
                 messageStruct.put("metadata", subStruct);
                 SourceRecord record = new SourceRecord(Collections.singletonMap("document_content", extractor.fileName()), Collections.singletonMap(extractor.fileName(), 0), topic, messageStruct.schema(), messageStruct);
                 records.add(record);
