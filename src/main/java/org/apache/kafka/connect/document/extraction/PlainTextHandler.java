@@ -10,7 +10,9 @@ import java.io.StringWriter;
 import java.nio.CharBuffer;
 
 /**
- * Created by Sergio Spinatelli on 11.03.2016.
+ * @author Sergio Spinatelli
+ *
+ * Clean Content Handler class for outputting plain text
  */
 public class PlainTextHandler extends GenericElementHandler implements Handler {
     StringBuilder builder = new StringBuilder();
@@ -24,6 +26,9 @@ public class PlainTextHandler extends GenericElementHandler implements Handler {
         has_text = false;
     }
 
+    /**
+     * Closes the handler and writes metadata to JSON
+     */
     public void close() {
         super.close();
         try {
@@ -36,7 +41,12 @@ public class PlainTextHandler extends GenericElementHandler implements Handler {
         }
     }
 
-    public void startRoot(RootElement root) throws IOException {
+    /*
+     * Callbacks for Clean Content "events"
+     */
+
+
+     public void startRoot(RootElement root) throws IOException {
     }
 
     public void endRoot(Element element) throws IOException {
@@ -58,85 +68,111 @@ public class PlainTextHandler extends GenericElementHandler implements Handler {
         has_text = true;
     }
 
-    public void end(Element var1) throws IOException {
+    public void end(Element element) throws IOException {
         if (has_text) {
             paragraph = true;
             builder.append("\n");
         }
     }
 
+    /**
+     * Start of a Metadata element (<meta> tags in the XHTML)
+     * @param name Name of the metadata entry
+     * @param value Value of the metadata entry
+     * @throws IOException
+     */
     public void startMetadata(String name, String value) throws IOException {
         metadata.add(name, value);
     }
-
-    public void startTextProperty(TextPropertyElement var1) throws IOException {
-        this.startMetadata(var1.name, null);
+    
+    public void startTextProperty(TextPropertyElement property) throws IOException {
+        this.startMetadata(property.name, null);
     }
 
-    public void startStringProperty(StringPropertyElement var1) throws IOException {
-        this.startMetadata(var1.name, var1.value);
+    public void startStringProperty(StringPropertyElement property) throws IOException {
+        this.startMetadata(property.name, property.value);
     }
 
-    public void startBooleanProperty(BooleanPropertyElement var1) throws IOException {
-        this.startMetadata(var1.name, Boolean.toString(var1.value));
+    public void startBooleanProperty(BooleanPropertyElement property) throws IOException {
+        this.startMetadata(property.name, Boolean.toString(property.value));
     }
 
-    public void startIntegerProperty(IntegerPropertyElement var1) throws IOException {
-        this.startMetadata(var1.name, Long.toString(var1.value));
+    public void startIntegerProperty(IntegerPropertyElement property) throws IOException {
+        this.startMetadata(property.name, Long.toString(property.value));
     }
 
-    public void startFloatProperty(FloatPropertyElement var1) throws IOException {
-        this.startMetadata(var1.name, Double.toString(var1.value));
+    public void startFloatProperty(FloatPropertyElement property) throws IOException {
+        this.startMetadata(property.name, Double.toString(property.value));
     }
 
-    public void startDateProperty(DatePropertyElement var1) throws IOException {
-        this.startMetadata(var1.name, Helper.toXSDDate(var1.value));
+    public void startDateProperty(DatePropertyElement property) throws IOException {
+        this.startMetadata(property.name, Helper.toXSDDate(property.value));
     }
 
-    public void startDurationProperty(DurationPropertyElement var1) throws IOException {
-        this.startMetadata(var1.name, String.valueOf(var1.value));
+    public void startDurationProperty(DurationPropertyElement property) throws IOException {
+        this.startMetadata(property.name, String.valueOf(property.value));
     }
 
-    public void startDataProperty(DataPropertyElement var1) throws IOException {
-        this.startMetadata(var1.name, null);
+    public void startDataProperty(DataPropertyElement property) throws IOException {
+        this.startMetadata(property.name, null);
     }
 
-    public void startLocaleProperty(LocalePropertyElement var1) throws IOException {
-        this.startMetadata("locale", var1.localeName);
+    public void startLocaleProperty(LocalePropertyElement property) throws IOException {
+        this.startMetadata("locale", property.localeName);
     }
 
-    public void startCodepageProperty(CodepagePropertyElement var1) throws IOException {
-        this.startMetadata("codepage", var1.codepageName);
+    public void startCodepageProperty(CodepagePropertyElement property) throws IOException {
+        this.startMetadata("codepage", property.codepageName);
     }
 
-    public void startFormField(FormFieldElement var1) throws IOException {
+    public void startFormField(FormFieldElement element) throws IOException {
     }
 
     // TODO: is this useful?
-    public void startString(StringElement var1) throws IOException {
+    public void startString(StringElement element) throws IOException {
     }
 
+    /**
+     * Retrieve the String representation of this object, i.e. the plain text
+     * @return A String containing the representation of the file contents
+     */
     public String toString() {
         return builder.toString();
     }
 
+    /**
+     * Retrieve the plain text from the file
+     * @return A String containing the plain text content of the file
+     */
     @Override
-    public String getText() {
+    public String getPlainText() {
         return toString();
     }
 
+    /**
+     * Retrieve getMetadata as a JSON String
+     * @return A JSON String representing the getMetadata of the file
+     */
     @Override
-    public String getMetadataString() {
+    public String getMetadataJson() {
         return md;
     }
 
+    /**
+     * Retrieve the Metadata object for the file
+     * @return The Metadata object
+     */
     @Override
     public Metadata getMetadata() {
         return metadata;
     }
 
+    /**
+     * Retrieve the XHTML representation of the file's content
+     * @return A String containing the XHTML representation of the content of the file
+     */
     @Override
-    public String getXML() {
+    public String getXHTML() {
         return null;
     }
 }

@@ -32,14 +32,15 @@ public class DocumentSourceTaskTest {
 
     @Before
     public void setup() {
-        task = new DocumentSourceTask();
         offsetStorageReader = PowerMock.createMock(OffsetStorageReader.class);
         context = PowerMock.createMock(SourceTaskContext.class);
+        task = new DocumentSourceTask();
         task.initialize(context);
 
         sourceProperties = new HashMap<>();
         sourceProperties.put("schema.name", "schema");
         sourceProperties.put("topic", "topic");
+        sourceProperties.put("files.prefix", "prefix");
     }
 
     @Test
@@ -53,12 +54,13 @@ public class DocumentSourceTaskTest {
             System.out.println("CREATING " + numberOfFiles.toString() + " FILES");
 
             for (int i = 0; i < numberOfFiles; i++) {
+                setup();
                 File f = File.createTempFile("document-source-test", null);
                 FileWriter fw = new FileWriter(f);
                 fw.write(Integer.toString(numberOfFiles - i));
                 fw.close();
 
-                sourceProperties.put("filename.path", f.getAbsolutePath());
+                sourceProperties.put("files", f.getAbsolutePath());
                 sourceProperties.put("content.extractor", "tika");
                 sourceProperties.put("output.type", "text");
                 task.start(sourceProperties);

@@ -20,10 +20,10 @@ import java.io.StringWriter;
 import java.nio.CharBuffer;
 
 /**
- * Created by Sergio Spinatelli on 11.03.2016.
+ * @author Sergio Spinatelli
  */
 public class XMLHandler extends GenericElementHandler implements Handler {
-    public static String PREFIX = "http://www.bitform.net/xml/schema/elements.xsd";
+    public static String PREFIX = "http://www.bitform.net/getXHTML/schema/elements.xsd";
     private ToXMLContentHandler handler = new ToXMLContentHandler();
     private boolean documentEnded = false;
     private char[] array = null;
@@ -426,12 +426,12 @@ public class XMLHandler extends GenericElementHandler implements Handler {
     }
 
     @Override
-    public String getText() {
+    public String getPlainText() {
         return null;
     }
 
     @Override
-    public String getXML() {
+    public String getXHTML() {
         return getXML(true);
     }
 
@@ -452,7 +452,7 @@ public class XMLHandler extends GenericElementHandler implements Handler {
     }
 
     @Override
-    public String getMetadataString() {
+    public String getMetadataJson() {
         return md;
     }
 

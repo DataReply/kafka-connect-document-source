@@ -7,7 +7,13 @@ import java.io.IOException;
 import java.nio.CharBuffer;
 
 /**
- * Created by Sergio Spinatelli on 11.03.2016.
+ * @author Sergio Spinatelli
+ *
+ * Clean Content Handler to output both XHTML and plain text by
+ * simultaneously using XMLHandler and PlainTextHandler.
+ * Basically it inherits XML-specific methods from XMLHandler and
+ * overrides PlainText ones, calling the PlainTextHandler and the XMLHandler
+ * implementations of the methods.
  */
 public class SimultaneousHandler extends XMLHandler implements Handler {
     PlainTextHandler plainHandler;
@@ -51,8 +57,8 @@ public class SimultaneousHandler extends XMLHandler implements Handler {
         plainHandler.text(buffer);
     }
 
-    public String getText() {
-        return plainHandler.getText();
+    public String getPlainText() {
+        return plainHandler.getPlainText();
     }
 
 }

@@ -15,8 +15,9 @@ connector.class=org.apache.kafka.connect.document.DocumentSourceConnector
 tasks.max=1
 schema.name=test_schema3
 topic=test_topic3
-filename.path=/path/to/file/filename.pdf
+files=/path/to/file/filename1.pdf,/path/to/file/filename2.docx
 content.extractor=tika
+output.type="xml"
 ```
 
 - **name**: name of the connector
@@ -24,7 +25,8 @@ content.extractor=tika
 - **tasks.max**: maximum number of tasks to create
 - **schema.name**: name to use for the schema
 - **topic**: name of the topic to append to
-- **filename.path**: path to the file to extract content from
+- **files**: comma separated list of paths to the files to extract content from
+- **files.prefix**: prefix for the files
 - **content.extractor**: type of content extractor to use; possible values are:
 	- 'tika': use the Apache Tika content extractor (default)
 	- 'oracle': use the Oracle Clean Content content extractor (faster but not recommended as it's less tested and testable)

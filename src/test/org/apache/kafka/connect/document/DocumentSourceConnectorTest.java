@@ -28,7 +28,7 @@ public class DocumentSourceConnectorTest {
         sourceProperties = new HashMap<>();
         sourceProperties.put("schema.name", "schema");
         sourceProperties.put("topic", "topic");
-        sourceProperties.put("filename.path", "/home/vagrant/testpath/text.txt");
+        sourceProperties.put("files", "/home/vagrant/testpath/text.txt");
 
     }
 
@@ -40,7 +40,7 @@ public class DocumentSourceConnectorTest {
         Assert.assertEquals(1, taskConfigs.size());
         Assert.assertEquals("schema", taskConfigs.get(0).get("schema.name"));
         Assert.assertEquals("topic", taskConfigs.get(0).get("topic"));
-        Assert.assertEquals("/home/vagrant/testpath/text.txt", taskConfigs.get(0).get("filename.path"));
+        Assert.assertEquals("/home/vagrant/testpath/text.txt", taskConfigs.get(0).get("files"));
         PowerMock.verifyAll();
     }
 
@@ -49,14 +49,10 @@ public class DocumentSourceConnectorTest {
         PowerMock.replayAll();
         connector.start(sourceProperties);
         List<Map<String, String>> taskConfigs = connector.taskConfigs(2);
-        Assert.assertEquals(2, taskConfigs.size());
+        Assert.assertEquals(1, taskConfigs.size());
         Assert.assertEquals("schema", taskConfigs.get(0).get("schema.name"));
         Assert.assertEquals("topic", taskConfigs.get(0).get("topic"));
-        Assert.assertEquals("/home/vagrant/testpath/text.txt", taskConfigs.get(0).get("filename.path"));
-
-        Assert.assertEquals("schema", taskConfigs.get(1).get("schema.name"));
-        Assert.assertEquals("topic", taskConfigs.get(1).get("topic"));
-        Assert.assertEquals("/home/vagrant/testpath/text.txt", taskConfigs.get(1).get("filename.path"));
+        Assert.assertEquals("/home/vagrant/testpath/text.txt", taskConfigs.get(0).get("files"));
         PowerMock.verifyAll();
     }
 

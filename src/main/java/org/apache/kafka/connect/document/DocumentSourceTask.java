@@ -14,10 +14,7 @@ import org.apache.tika.metadata.Metadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 
 /**
@@ -27,19 +24,25 @@ import java.util.Map;
  */
 // TODO: comment code properly
 public class DocumentSourceTask extends SourceTask {
+    public static final String FILENAME_FIELD = "document";
+    public static final String READ = "read";
+
     private final static Logger log = LoggerFactory.getLogger(DocumentSourceTask.class);
-
-
+    private static Schema subschema;
     private static Schema schema = null;
+
     private String schemaName;
     private String subSchemaName;
     private String topic;
-    private String filename_path;
+    private Queue<String> files;
     private String extractor_cfg;
     private boolean done;
     private ContentExtractor extractor;
     private String output_type;
-    private Schema subschema;
+    private String filePrefix = null;
+
+    Map<Map<String, String>, Map<String, Object>> offsets = new HashMap<>(0);
+    private String prefix = "";
 
     @Override
     public String version() {
@@ -55,30 +58,29 @@ public class DocumentSourceTask extends SourceTask {
     public void start(Map<String, String> props) {
         schemaName = props.get(DocumentSourceConnector.SCHEMA_NAME);
         if (schemaName == null)
-            throw new ConnectException("config schema.name null");
+            throw new ConnectException("missing config "+DocumentSourceConnector.SCHEMA_NAME);
         subSchemaName = "sub_" + schemaName;
         topic = props.get(DocumentSourceConnector.TOPIC);
         if (topic == null)
-            throw new ConnectException("config topic null");
+            throw new ConnectException("missing config "+DocumentSourceConnector.TOPIC);
+
+        String paths = props.get(DocumentSourceConnector.FILES);
+        if (paths == null || paths.isEmpty())
+            throw new ConnectException("missing config "+DocumentSourceConnector.FILES);
 
 
-        filename_path = props.get(DocumentSourceConnector.FILE_PATH);
-        if (filename_path == null || filename_path.isEmpty())
-            throw new ConnectException("missing filename.path");
+        prefix = props.get(DocumentSourceConnector.PREFIX);
+
+        if (!prefix.equals(""))
+            prefix = prefix+"_";
+
+        files = new LinkedList<>(Arrays.asList(paths.split(",")));
 
         extractor_cfg = props.get(DocumentSourceConnector.CONTENT_EXTRACTOR);
         output_type = props.get(DocumentSourceConnector.OUTPUT_TYPE);
 
-        if (extractor_cfg == ContentExtractor.ORACLE) {
-            try {
-                extractor = new OracleContentExtractor(filename_path, output_type);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        } else
-            extractor = new TikaContentExtractor(filename_path);
-
         log.trace("Creating schema");
+        // Metadata schema
         subschema = SchemaBuilder
                 .struct()
                 .name(subSchemaName)
@@ -96,6 +98,8 @@ public class DocumentSourceTask extends SourceTask {
                 .field("content", Schema.OPTIONAL_STRING_SCHEMA)
                 .field("metadata", subschema)
                 .build();
+
+        loadOffsets();
         done = false;
     }
 
@@ -108,28 +112,51 @@ public class DocumentSourceTask extends SourceTask {
      */
     @Override
     public List<SourceRecord> poll() throws InterruptException {
-
         List<SourceRecord> records = new ArrayList<>();
+        String file = null;
+        Map<String, Object> value = null;
+
+        do {
+            if (files.isEmpty()) {
+                stop();
+                return records;
+            }
+            file = files.poll();
+            value = offsets.get(offsetKey(file));
+        } while (value != null && ((Long) value.get(READ)) == 1);
 
         if (!done) {
             try {
+                if (extractor_cfg == ContentExtractor.ORACLE)
+                    extractor = new OracleContentExtractor(file, output_type);
+                else
+                    extractor = new TikaContentExtractor(file);
+
                 Struct messageStruct = new Struct(schema);
-                messageStruct.put("name", extractor.fileName());
-                messageStruct.put("content", output_type.equals("text") ? "" : extractor.xml());
-                messageStruct.put("raw_content", output_type.equals("xml") ? "" : extractor.plainText());
-                Struct subStruct = extractor_cfg.equals("tika") ? tikaMetadata(extractor.metadata()) : oracleMetadata(extractor.metadata());
+                messageStruct.put("name", extractor.getFileName());
+                messageStruct.put("content", output_type.equals("text") ? "" : extractor.getXHTML());
+                messageStruct.put("raw_content", output_type.equals("getXHTML") ? "" : extractor.getPlainText());
+
+                Struct subStruct = extractor_cfg.equals("tika") ? tikaMetadata(extractor.getMetadata()) : oracleMetadata(extractor.getMetadata());
                 messageStruct.put("metadata", subStruct);
-                SourceRecord record = new SourceRecord(Collections.singletonMap("document_content", extractor.fileName()), Collections.singletonMap(extractor.fileName(), 0), topic, messageStruct.schema(), messageStruct);
+
+                SourceRecord record = new SourceRecord(offsetKey(file), offsetValue((long) 1), topic, messageStruct.schema(), messageStruct);
                 records.add(record);
-                stop();
             } catch (Exception e) {
                 e.printStackTrace();
-                stop();
             }
         }
+
+        stop(files.isEmpty());
+
         return records;
     }
 
+    /**
+     * Construct Struct object from metadata output by Tika
+     * @param md Metadata object
+     * @return Struct containing all metadata fields needed
+     */
     private Struct tikaMetadata(Metadata md) {
         Struct subStruct = new Struct(subschema);
         subStruct.put("ContentType", md.get("Content-Type"));
@@ -140,6 +167,11 @@ public class DocumentSourceTask extends SourceTask {
         return subStruct;
     }
 
+    /**
+     * Construct Struct object from metadata output by Clean Content
+     * @param md Metadata object
+     * @return Struct containing all metadata fields needed
+     */
     private Struct oracleMetadata(Metadata md) {
         Struct subStruct = new Struct(subschema);
         subStruct.put("ContentType", md.get("format"));
@@ -157,6 +189,34 @@ public class DocumentSourceTask extends SourceTask {
     @Override
     public void stop() {
         done = true;
+    }
+
+    public void stop(boolean stop) {
+        done = stop;
+    }
+
+    private Map<String, String> offsetKey(String partition) {
+        return Collections.singletonMap(FILENAME_FIELD, prefix+partition);
+    }
+
+    private Map<String, Object> offsetValue(Long pos) {
+        return Collections.singletonMap(READ, (Object) pos);
+    }
+
+
+    /**
+     * Loads the current saved offsets.
+     */
+    private void loadOffsets() {
+        List<Map<String, String>> partitions = new ArrayList<>();
+        for (String file : files) {
+            partitions.add(offsetKey(file));
+        }
+        try {
+            offsets.putAll(context.offsetStorageReader().offsets(partitions));
+        } catch (Exception nu) {
+//            nu.printStackTrace();
+        }
     }
 
 }

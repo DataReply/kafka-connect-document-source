@@ -12,10 +12,13 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Created by Sergio Spinatelli on 11.03.2016.
+ * @author Sergio Spinatelli
+ *
+ * Content extractor that uses the Oracle Clean Content library
  */
 public class OracleContentExtractor implements ContentExtractor {
-    private final File file;
+    private File file;
+    private String filename;
     private Map<String, Class<?>> handlers = new HashMap<>(4);
 
     private SecureRequest request;
@@ -25,12 +28,24 @@ public class OracleContentExtractor implements ContentExtractor {
     private boolean extracted;
     private String metadata = "";
 
+    /**
+     * Constructor extracting XHTML and plain text
+     * @param filename Path to the file from where to extract content
+     * @throws Exception
+     */
     public OracleContentExtractor(String filename) throws Exception {
         this(filename, OUTPUT_XML_TEXT);
     }
 
+    /**
+     * Constructor
+     * @param filename Path to the file from where to extract content
+     * @param output Type of output to retrieve (XHTML and/or plain text)
+     * @throws Exception
+     */
     public OracleContentExtractor(String filename, String output) throws Exception {
         file = new File(filename);
+        this.filename = filename;
         handlers.put(OUTPUT_XML_TEXT, SimultaneousHandler.class);
         handlers.put(OUTPUT_TEXT_XML, SimultaneousHandler.class);
         handlers.put(OUTPUT_TEXT, PlainTextHandler.class);
@@ -42,6 +57,7 @@ public class OracleContentExtractor implements ContentExtractor {
         extracted = false;
         handler = (Handler) handlers.get(output).newInstance();
 
+        // Prepare SecureRequest for later content extraction
         request = new SecureRequest();
         request.setOption(SecureOptions.JustAnalyze, true);
         request.setOption(SecureOptions.OutputType, SecureOptions.OutputTypeOption.ToHandler);
@@ -49,40 +65,78 @@ public class OracleContentExtractor implements ContentExtractor {
         request.setOption(SecureOptions.ElementHandler, handler);
     }
 
+    /**
+     * Retrieve the plain text from the file
+     * @return A String containing the plain text content of the file
+     */
     @Override
-    public String plainText() throws IOException, TikaException, SAXException {
+    public String getPlainText() throws IOException, TikaException, SAXException {
         if (!extracted)
             extract();
         return text;
     }
 
+    /**
+     * Extract content in form of an XHTML string
+     * @return a String containing the content of the document as XHTML
+     * @throws IOException
+     * @throws TikaException
+     * @throws SAXException
+     */
     @Override
-    public String xml() throws IOException, TikaException, SAXException {
+    public String getXHTML() throws IOException, TikaException, SAXException {
         if (!extracted)
             extract();
         return xml;
     }
 
+    /**
+     * Method to get the name of the file from where content is extracted
+     * @return a String of the file name
+     */
     @Override
-    public String fileName() {
+    public String getFileName() {
         return file.getName();
     }
 
+    /**
+     * Method to get the name of the file from where content is extracted
+     * @return a String of the file name
+     */
     @Override
-    public String metadataString() {
-        return handler.getMetadataString();
+    public String getFile() {
+        return filename;
     }
 
+    /**
+     * Retrieve Metadata as a JSON String
+     * @return A JSON String representing the metadata of the file
+     */
     @Override
-    public Metadata metadata() {
+    public String getMetadataJson() {
+        return handler.getMetadataJson();
+    }
+
+    /**
+     * Method to get the Metadata object
+     * @return A Metadata object
+     */
+    @Override
+    public Metadata getMetadata() {
         return handler.getMetadata();
     }
 
-    public void extract() throws IOException {
+    /**
+     * This method does the extraction. It calls the execute function of the
+     * Oracle Clean Content library and then gets the plain text and XHTML content
+     * from the handler, updating the stored fields if necessary.
+     * @throws IOException
+     */
+    private void extract() throws IOException {
         request.execute();
-        String t = handler.getText();
+        String t = handler.getPlainText();
         if (t != null) text = t;
-        String x = handler.getXML();
+        String x = handler.getXHTML();
         if (x != null) xml = x;
 
         extracted = true;
