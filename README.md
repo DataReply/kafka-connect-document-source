@@ -16,8 +16,25 @@ tasks.max=1
 schema.name=test_schema3
 topic=test_topic3
 files=/path/to/file/filename1.pdf,/path/to/file/filename2.docx
+files.prefix=prefix
 content.extractor=tika
-output.type="xml"
+output.type=text_xml
+```
+
+or as a JSON
+
+```json
+{
+	"name": "document-source",
+	"connector.class": "org.apache.kafka.connect.document.DocumentSourceConnector",
+	"tasks.max": "1",
+	"schema.name": "test_schema3",
+	"topic": "test_topic3",
+	"files": "/path/to/file/filename1.pdf,/path/to/file/filename2.docx",
+	"files.prefix": "prefix",
+	"content.extractor": "tika",
+	"output.type": "text_xml"
+}
 ```
 
 - **name**: name of the connector
